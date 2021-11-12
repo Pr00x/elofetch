@@ -1,0 +1,21 @@
+char *arch[] = {
+	"                   -`\t\t\t",
+	"                  .o+`\t\t\t",
+	"                 `ooo/\t\t\t",
+	"                `+oooo:\t\t\t",
+	"               `+oooooo:\t\t",
+	"               -+oooooo+:\t\t",
+	"             `/:-:++oooo+:\t\t",
+	"            `/++++/+++++++:\t\t",
+	"           `/++++++++++++++:\t\t",
+	"          `/+++ooooooooooooo/`\t\t",
+	"         ./ooosssso++osssssso+`\t\t",
+	"        .oossssso-````/ossssss+`\t",
+	"       -osssssso.      :ssssssso.\t",
+	"      :osssssss/        osssso+++.\t",
+	"     /ossssssss/        +ssssooo/-\t",
+	"   `/ossssso+/:-        -:/+osssso+-\t",
+	"  `+sso+:-`                 `.-/+oso:\t",
+	" `++:.                           `-/+/\t",
+	" .`                                 `\t"
+};
