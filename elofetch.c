@@ -677,7 +677,7 @@ void linux_distro(const char *home) {
 		pkgs = pacman();
 		elofetch(distro, mint, BOLD_GREEN, pkgs, 19, home);
 	}
-	else if(strncasecmp(distro, "Pop!_OS", 70) == 0) {
+	else if(strncasecmp(distro, "Pop!_OS", 7) == 0) {
 		#include"distro/popos.h"
 
 		pkgs = pacman();
