@@ -1,4 +1,4 @@
-char *parrot[] = {
+const char *parrot[] = {
 ":oho/-`\t\t\t\t\t",
 "`mMMMMMMMMMMMNmmdhy-\t\t\t",
 " dMMMMMMMMMMMMMMMMMMs`\t\t\t",

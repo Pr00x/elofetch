@@ -1,5 +1,3 @@
-// Creator: ProX
-
 #include<stdio.h>
 #include<stdlib.h>
 #include<string.h>
@@ -551,7 +549,7 @@ static char *pacman() {
 	return pkg;
 }
 
-void elofetch(const char *distro, char *logo[], const char *COLOR, const char *pkgs, int n, const char *home) {
+void elofetch(const char *distro, const char *logo[], const char *COLOR, const char *pkgs, int n, const char *home) {
 	struct utsname uts;
 
   if(uname(&uts)) {
@@ -572,6 +570,11 @@ void elofetch(const char *distro, char *logo[], const char *COLOR, const char *p
 	size_t i;
 
 	for(i = 0; i < n; i++) {
+		if(*(logo + i) == NULL) {
+			puts(RESET);
+			exit(-1);
+		}
+
 		printf("%s%s", COLOR, logo[i]);
 
 		switch(i) {
@@ -649,6 +652,42 @@ void linux_distro(const char *home) {
 
 		pkgs = pacman();
 		elofetch(distro, parrot, BOLD_CYAN, pkgs, 24, home);
+	}
+	else if(strncmp(distro, "Debian", 6) == 0) {
+		#include"distro/debian.h"
+
+		pkgs = pacman();
+		elofetch(distro, debian, BOLD_RED, pkgs, 17, home);
+	}
+	else if(strncmp(distro, "Manjaro", 7) == 0) {
+		#include"distro/manjaro.h"
+
+		pkgs = pacman();
+		elofetch(distro, manjaro, BOLD_GREEN, pkgs, 14, home);
+	}
+	else if(strncmp(distro, "Ubuntu", 6) == 0) {
+		#include"distro/ubuntu.h"
+
+		pkgs = pacman();
+		elofetch(distro, ubuntu, BOLD_RED, pkgs, 20, home);
+	}
+	else if(strncmp(distro, "Linux Mint", 10) == 0) {
+		#include"distro/mint.h"
+
+		pkgs = pacman();
+		elofetch(distro, mint, BOLD_GREEN, pkgs, 19, home);
+	}
+	else if(strncasecmp(distro, "Pop!_OS", 70) == 0) {
+		#include"distro/popos.h"
+
+		pkgs = pacman();
+		elofetch(distro, pop_os, BOLD_BLUE, pkgs, 20, home);
+	}
+	else if(strncmp(distro, "Kali", 4) == 0) {
+		#include"distro/kali.h"
+
+		pkgs = pacman();
+		elofetch(distro, kali, BOLD_BLUE, pkgs, 20, home);
 	}
 }
 

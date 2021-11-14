@@ -1,0 +1,21 @@
+const char *mint[] = {
+	"\x1b[1m\033[37m             ...-:::::-...\x1b[1m\033[32m\t\t\t",
+	"\x1b[1m\033[37m          .-MMMMMMMMMMMMMMM-.\x1b[1m\033[32m\t\t\t",
+	"\x1b[1m\033[37m      .-MMMM\x1b[1m\033[37m`..-:::::::-..`\x1b[1m\033[37mMMMM-.\x1b[1m\033[32m\t\t",
+	"\x1b[1m\033[37m    .:MMMM\x1b[1m\033[37m.:MMMMMMMMMMMMMMM:.\x1b[1m\033[37mMMMM:.\x1b[1m\033[32m\t\t",
+	"\x1b[1m\033[37m   -MMM\x1b[1m\033[32m-M---MMMMMMMMMMMMMMMMMMM.\x1b[1m\033[37mMMM-\x1b[1m\033[32m\t\t",
+	"\x1b[1m\033[37m `:MMM\x1b[1m\033[32m:MM`  :MMMM:....::-...-MMMM:\x1b[1m\033[37mMMM:`\x1b[1m\033[32m\t\t",
+	"\x1b[1m\033[37m :MMM\x1b[1m\033[32m:MMM`  :MM:`  ``    ``  `:MMM:\x1b[1m\033[37mMMM:\x1b[1m\033[32m\t\t",
+	"\x1b[1m\033[37m.MMM\x1b[1m\033[32m.MMMM`  :MM.  -MM.  .MM-  `MMMM.\x1b[1m\033[37mMMM.\x1b[1m\033[32m\t",
+	"\x1b[1m\033[37m:MMM\x1b[1m\033[32m:MMMM`  :MM.  -MM-  .MM:  `MMMM-\x1b[1m\033[37mMMM:\x1b[1m\033[32m\t",
+	"\x1b[1m\033[37m:MMM\x1b[1m\033[32m:MMMM`  :MM.  -MM-  .MM:  `MMMM:\x1b[1m\033[37mMMM:\x1b[1m\033[32m\t",
+	"\x1b[1m\033[37m:MMM\x1b[1m\033[32m:MMMM`  :MM.  -MM-  .MM:  `MMMM-\x1b[1m\033[37mMMM:\x1b[1m\033[32m\t",
+	"\x1b[1m\033[37m.MMM\x1b[1m\033[32m.MMMM`  :MM:--:MM:--:MM:  `MMMM.\x1b[1m\033[37mMMM.\x1b[1m\033[32m\t",
+	"\x1b[1m\033[37m :MMM\x1b[1m\033[32m:MMM-  `-MMMMMMMMMMMM-`  -MMM-\x1b[1m\033[37mMMM:\x1b[1m\033[32m\t\t",
+	"\x1b[1m\033[37m  :MMM\x1b[1m\033[32m:MMM:`                `:MMM:\x1b[1m\033[37mMMM:\x1b[1m\033[32m\t",
+	"\x1b[1m\033[37m   .MMM\x1b[1m\033[32m.MMMM:--------------:MMMM.\x1b[1m\033[37mMMM.\x1b[1m\033[32m\t\t",
+	"\x1b[1m\033[37m     '-MMMM\x1b[1m\033[32m.-MMMMMMMMMMMMMMM-.\x1b[1m\033[37mMMMM-'\x1b[1m\033[32m\t\t",
+	"\x1b[1m\033[37m       '.-MMMM\x1b[1m\033[32m``--:::::--``\x1b[1m\033[37mMMMM-.'\x1b[1m\033[32m\t\t",
+	"\x1b[1m\033[37m            '-MMMMMMMMMMMMM-'\x1b[1m\033[32m\t\t",
+	"\x1b[1m\033[37m               ``-:::::-``\x1b[1m\033[32m\t\t"
+};

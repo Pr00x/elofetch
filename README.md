@@ -1,19 +1,21 @@
 # Elofetch
 ## Elofetch - The fastest neofetch ever made
 <b>Elofetch</b> is a fast program written in C.<br>
-Like <b>neofetch</b>, this program will show you software and hardware info, but 200x faster.
-Elofetch currently only support Linux, but in the future this will be a cross-platform program. 
+Like <b>neofetch</b>, this program will show you software and hardware info, but <b>200x</b> faster.
+Elofetch currently only supports <b>Linux</b>, but in the future this will be a <b>cross-platform</b> program. 
 <br><br>
 <img src="https://i.ibb.co/10yCB3v/elofetch.png">
 
 ## Speed
-Main advantage of this program is a speed.<br>
-The average <b>Elofetch</b> execution speed is 1ms. (For example, neofetch execution speed is 250ms).
+Main advantage of this program is a <b>speed</b>.<br>
+The average <b>Elofetch</b> execution speed is <b>1ms</b>. (For example, neofetch execution speed is <b>250ms</b>).
 <br><br>
 <img src="https://i.ibb.co/F4ZX45D/elofetch-speed.png">
 ## Installation
-<b>git</b> clone https://github.com/Pr00x/elofetch/<br>
-<b>sudo make</b> clean install<br>
+```
+git clone https://github.com/Pr00x/elofetch
+sudo make clean install
+```
 ## Usage
 #### After installing, just run the program
 elofetch
@@ -23,3 +25,4 @@ Elofetch caches data for faster execution speed.
 elofetch --reconfiguration
 <br><br>
 After that, <b>Elofetch</b> will update the cached data.
+

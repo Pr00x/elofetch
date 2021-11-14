@@ -1,4 +1,4 @@
-char *arch[] = {
+const char *arch[] = {
 	"                   -`\t\t\t",
 	"                  .o+`\t\t\t",
 	"                 `ooo/\t\t\t",
