@@ -484,7 +484,7 @@ static char *uptime() {
 	struct sysinfo os_info;
 	int err = sysinfo(&os_info);
 	char *time = malloc(BUFF / 2);
-	unsigned int uis = os_info.uptime, days, hours, minutes, seconds;
+	unsigned int uis = os_info.uptime, days, hours, minutes;
 
 	days = uis / 86400;
 	uis %= 86400;
@@ -492,7 +492,6 @@ static char *uptime() {
 	uis %= 3600;
 	minutes = uis / 60;
 	uis %= 60;
-	seconds = uis;
 
 	if(err) {
 		perror("elofetch");
