@@ -332,7 +332,7 @@ static char *memory() {
 	perc = (float)used_ram / (float)memtotal * 100;
 
 	ram = malloc(BUFF);
-	snprintf(ram, BUFF, "%dMiB / %dMiB |%d%%|", used_ram, memtotal, perc);
+	snprintf(ram, BUFF, "%dMiB / %dMiB (%d%%)", used_ram, memtotal, perc);
 
 	return ram;
 }
@@ -353,7 +353,7 @@ static char *storage() {
 
 
 	hdd  = malloc(BUFF / 2);
-	snprintf(hdd, BUFF / 2, "%.1fGiB / %.1fGiB |%.0f%%|", free, total, perc);
+	snprintf(hdd, BUFF / 2, "%.1fGiB / %.1fGiB (%.0f%%)", free, total, perc);
 
 	return hdd;
 }
@@ -500,14 +500,11 @@ static char *uptime() {
 	}
 
 	if(days)
-		snprintf(time, BUFF / 2, "%u days, %u hours, %u mins, %u seconds", days, hours, minutes, seconds);
+		snprintf(time, BUFF / 2, "%u days, %u hours, %u mins", days, hours, minutes);
 	else if(!days && hours)
-		snprintf(time, BUFF / 2, "%u hours, %u mins, %u seconds", hours, minutes, seconds);
+		snprintf(time, BUFF / 2, "%u hours, %u mins", hours, minutes);
 	else if(!days && !hours && minutes)
-		snprintf(time, BUFF / 2, "%u mins, %u seconds", minutes, seconds);
-	else if(!days && !hours && !minutes)
-		snprintf(time, BUFF / 2, "%u seconds", seconds);
-
+		snprintf(time, BUFF / 2, "%u mins", minutes);
 	return time;
 }
 
