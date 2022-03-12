@@ -1,7 +1,14 @@
-#include<stdio.h>
-#include<stdlib.h>
-#include<string.h>
-#include<ctype.h>
+#include <stdio.h>
+#include <stdlib.h>
+#include <string.h>
+#include <unistd.h>
+#include <sys/utsname.h>
+#include <sys/sysinfo.h>
+#include <sys/stat.h>
+#include <sys/statvfs.h>
+#include <dirent.h>
+#include <errno.h>
+#include <stdint.h>
 
 #define RED "\x1b[31m"
 #define GREEN "\x1b[32m"
@@ -18,38 +25,21 @@
 #define BOLD_MAGENTA "\x1b[1m\033[35m"
 #define BOLD_CYAN "\x1b[1m\033[36m"
 #define BOLD_WHITE "\x1b[1m\033[37m"
+#define BUFF 50
+#define PROGRAM_NAME "elofetch"
 
-#define BUFF 100
+char hostname[BUFF * 2], gpu[BUFF], bars[BUFF], distro[BUFF], path[BUFF * 2], CPU[BUFF], ram[BUFF], hdd[BUFF], colors[BUFF * 2], time[BUFF], res[15], gpu[BUFF], readStdout[BUFF];
 
-#ifdef __linux__
-	#include<unistd.h>
-	#include<sys/utsname.h>
-	#include<sys/sysinfo.h>
-	#include<sys/stat.h>
-	#include<sys/statvfs.h>
-	#include<dirent.h>
-	#include<errno.h>
-	#define PROGRAM_NAME "elofetch"
-	#define OS 1
-#elif _WIN32
-	#include<windows.h>
-	#define OS 2
-#else
-	#define OS 0
-#endif
-
-int blank(const char *str) {
-	size_t i;
-
-	for(i = 0; i < strlen(str); i++)
-		if(!isspace(*(str + i)))
+uint8_t blank(const char *str) {
+	for(uint8_t i = 0; i < strlen(str); i++)
+		if(*(str + i) != ' ')
 			return -1;
 
 	return 0;
 }
 
 void remove_word(char *str, const char *sub) {
-	size_t len = strlen(sub);
+	short int len = strlen(sub);
 
 	if((str = strstr(str, sub)) == NULL)
 		return;
@@ -58,46 +48,36 @@ void remove_word(char *str, const char *sub) {
 		memmove(str, str + len, strlen(str + len) + 1);
 }
 
-static char *read_stdout(const char *cmd) {
+char *read_stdout(const char *cmd) {
 	FILE *len = popen(cmd, "r");
-	char *str;
-	str = malloc(BUFF / 2);
-	char c;
+	int c;
 	size_t i = 0;
 
 	while((c = fgetc(len)) != EOF) {
 		if(i > 49) {
 			pclose(len);
-			*(str + i) = '\0';
+			*(readStdout + 49) = '\0';
 
-			return str;
+			return readStdout;
 		}
 
-		*(str + i) = c;
+		*(readStdout + i) = c;
 		i++;
 	}
 
-	*(str + i) = '\0';
-
+	*(readStdout + i) = '\0';
 	pclose(len);
 
-	return str;
+	return readStdout;
 }
 
-static char *hostname() {
+char *hostName() {
 	FILE *file = fopen("/etc/hostname", "r");
-	char *hostname;
 
-	if(!file) {
-		hostname = "unknown";
+	if(!file) return "unknown";
 
-		return hostname;
-	}
-
-	size_t i = 0;
+	uint8_t i = 0;
 	int c;
-
-	hostname = malloc(BUFF);
 
 	while((c = fgetc(file)) != EOF) {
 		if(i > 97) {
@@ -112,57 +92,34 @@ static char *hostname() {
 	}
 
 	fclose(file);
-	hostname = realloc(hostname, i + 1);
 	hostname[i] = '\0';
 
 	return hostname;
 }
 
-static char *generate_bars(size_t a, size_t b) {
-	size_t i;
-	char *str;
-	str = malloc(BUFF);
+char *generate_bars(short int a, short int b) {
+	short int i;
 
-	for(i = 0; i < (a + b + 1); i++) {
-		if(i == a + b) {
-			str = realloc(str, i + 1);
-			*(str + i) = '\0';
+	for(i = 0; i < (a + b + 1); i++)
+		*(bars + i) = '-';
 
-			return str;
-		}
-
-		*(str + i) = '-';
-	}
-
-	return str;
+	return bars;
 }
 
-static char *operating_system() {
+char *operating_system() {
 	FILE *file = fopen("/etc/os-release", "r");
-	char *distro;
 
-	if(!file) {
-		distro = "Linux";
-
-		return distro;
-	}
+	if(!file) return "GNU/Linux";
 
 	size_t len, n;
-	char *pretty_name, *line;
-
-	pretty_name = malloc(BUFF);
-	line = NULL;
+	char *line = NULL;
 
 	while(getline(&line, &len, file) != -1)
-		if(sscanf(line, "PRETTY_NAME=\"%50[^\"]s", pretty_name) > 0)
+		if(sscanf(line, "PRETTY_NAME=\"%50[^\"]s", distro) > 0)
 			break;
 
 	fclose(file);
-	n = strlen(pretty_name) + 1;
-	distro = malloc(n);
-	snprintf(distro, n, "%s", pretty_name);
 	free(line);
-	free(pretty_name);
 
 	return distro;
 }
@@ -171,7 +128,7 @@ void cp(const char *location) {
 	FILE *cpuinfo = fopen("/proc/cpuinfo", "r");
 
 	if(!cpuinfo) {
-		perror("elofetch");
+		perror(PROGRAM_NAME);
 		exit(-1);
 	}
 
@@ -183,12 +140,12 @@ void cp(const char *location) {
 
 	fclose(cpuinfo);
 
-	char *str = malloc(i + 1);
+	char str[i + 1];
 	i = 0;
 	FILE *cpuinfo1 = fopen("/proc/cpuinfo", "r");
 
 	if(!cpuinfo1) {
-		perror("elofetch");
+		perror(PROGRAM_NAME);
 		exit(-1);
 	}
 
@@ -199,80 +156,62 @@ void cp(const char *location) {
 
 	*(str + i) = '\0';
 	fclose(cpuinfo1);
-
 	FILE *cpuinfo2 = fopen(location, "a");
-
 	fprintf(cpuinfo2, "%s", str);
-	free(str);
 	fclose(cpuinfo2);
 }
 
-static char *processor() {
-	char *CPU, *path, *directory;
-	const char *home = getenv("HOME");
-	size_t length = strlen(home) + 26;
+char *processor(const char *home) {
+	uint8_t length = strlen(home) + 26;
+	char path[length], directory[length];
 
-	path = malloc(length); // ~/.config/elofetch/cpuinfo
-	directory = malloc(length);
-	memset(path, '\0', length);
-	memset(directory, '\0', length);
 	strcpy(path, home);
 	strcat(path, "/.config/");
 
-	if(access(path, F_OK) != 0)
-		if(ENOENT == errno)
-			mkdir(path, S_IRWXU);
+	if(access(path, F_OK) && ENOENT == errno)
+		mkdir(path, S_IRWXU);
 
 	strcat(path, "elofetch/");
 	strcat(directory, home);
 	strcat(directory, "/.config/elofetch/cpuinfo");
 
-	if(access(path, F_OK) != 0) {
-		if(ENOENT == errno) {
-			mkdir(path, S_IRWXU);
-			cp(directory);
-			strcat(path, "cpuinfo");
-		}
+	if(access(path, F_OK) && ENOENT == errno) {
+		mkdir(path, S_IRWXU);
+		cp(directory);
+		strcat(path, "cpuinfo");
 	}
 	else
 		strcat(path, "cpuinfo");
 
 	FILE *file = fopen(path, "r");
-	int threads = 0;
+	uint8_t threads = 0;
 
 	if(!file) {
 		cp(path);
 		file = fopen(path, "r");
 	}
 
-	free(directory);
-
 	size_t len, n, i;
-	char *model, *line, *substr, *rm,
+	char model[BUFF], *line = NULL, *substr, *rm,
 			 *intel[] = { "(R)", "(TM)", " Core", " CPU", },
 			 *amd[] = { "(tm)", " processor", " Dual-Core", " Quad-Core", " Six-Core", " Eight-Core" };
-
-	model = malloc(BUFF);
-	line = NULL;
 
 	while(getline(&line, &len, file) != -1)
 		if(sscanf(line, "model name      : %50[^\n]s", model) > 0)
 			threads++;
 
 	fclose(file);
-	n = strlen(model) + 1;
-	CPU = malloc(n);
 
-	if(strncasecmp(model, "Intel", 5) == 0) {
+	if(strncasecmp(model, "intel", 5) == 0) {
 		rm = strchr(model, '@');
 
-		if(rm != NULL)
+		if(rm)
 			*rm = '\0';
 
 		for(i = 0; i < sizeof(intel) / sizeof(*intel); i++)
 			remove_word(model, intel[i]);
 	}
-	else if(strncasecmp(model, "AMD", 3) == 0) {
+	else if(strncasecmp(model, "amd", 3)) {
 		for(i = 0; i < sizeof(amd) / sizeof(*amd); i++)
 			remove_word(model, amd[i]);
 	}
@@ -283,7 +222,7 @@ static char *processor() {
 	FILE *cpu_freq = fopen("/sys/devices/system/cpu/cpu0/cpufreq/cpuinfo_max_freq", "r");
 
 	if(!cpu_freq) {
-		snprintf(CPU, n, "%s(%d)", model, threads);
+		snprintf(CPU, BUFF, "%s(%d)", model, threads);
 	}
 	else {
 		if(getline(&line1, &len1, cpu_freq) != -1)
@@ -291,25 +230,18 @@ static char *processor() {
 
 		frequency = frequency / 1000 / 1000;
 		fclose(cpu_freq);
-		snprintf(CPU, n, "%s(%d) @ %.2fGHz", model, threads, frequency);
+		snprintf(CPU, BUFF, "%s(%d) @ %.2fGHz", model, threads, frequency);
 	}
-	free(path);
 	free(line);
-	free(model);
 	free(line1);
 
 	return CPU;
 }
 
-static char *memory() {
-	char *ram;
+char *memory() {
 	FILE *file = fopen("/proc/meminfo", "r");
 
-	if(!file) {
-		ram = "unknown";
-
-		return ram;
-	}
+	if(!file) return "unknown";
 
 	int used_ram, memtotal, memfree, buffers, cached, shmem, sreclaimable, perc;
 	size_t len;
@@ -331,37 +263,30 @@ static char *memory() {
 	memtotal /= 1024;
 	perc = (float)used_ram / (float)memtotal * 100;
 
-	ram = malloc(BUFF);
 	snprintf(ram, BUFF, "%dMiB / %dMiB (%d%%)", used_ram, memtotal, perc);
 
 	return ram;
 }
 
-static char *storage() {
+char *storage() {
 	struct statvfs fs;
-	char *hdd;
 
 	if(statvfs(".", &fs)) {
 		perror(PROGRAM_NAME);
-
-		return "unknown";
+		exit(-1);
 	}
 
 	float total = (float)fs.f_blocks * (float)fs.f_frsize / 1024 / 1024 / 1024,
 				free = total - (float)fs.f_bsize * (float)fs.f_bfree / 1024 / 1024 / 1024,
 				perc = free / total * 100;
 
-
-	hdd  = malloc(BUFF / 2);
-	snprintf(hdd, BUFF / 2, "%.1fGiB / %.1fGiB (%.0f%%)", free, total, perc);
+	snprintf(hdd, BUFF, "%.1fGiB / %.1fGiB (%.0f%%)", free, total, perc);
 
 	return hdd;
 }
 
-static char *resolution(const char *home) {
-	size_t n = strlen(home) + 29;
-	char *path = malloc(n);
-	const char *output;
+char *resolution(const char *home) {
+	uint8_t n = strlen(home) + 29;
 	memset(path, '\0', n);
 	strcat(path, home);
 	strcat(path, "/.config/elofetch/resolution");
@@ -371,61 +296,48 @@ static char *resolution(const char *home) {
 
 	if(!file) {
 		file1 = fopen(path, "a");
-		output = read_stdout("/bin/xdpyinfo | awk '/dimensions:/ { print $2 }'");
-		fprintf(file1, "%s", output);
+		const char *stdout = read_stdout("/bin/xdpyinfo | awk '/dimensions:/ { print $2 }'");
+		fprintf(file1, "%s", stdout);
 		fclose(file1);
 	}
 
 	file = fopen(path, "r");
-	free(path);
-
-	char *res = malloc(26),
-			 *line = NULL;
+	char *line = NULL;
 	size_t len;
 
 	if(getline(&line, &len, file) != -1)
-		sscanf(line, "%25s", res);
+		sscanf(line, "%15s", res);
 
 	fclose(file);
 	free(line);
-
-	*(res + strlen(res)) = '\0';
+	*(res + 14) = '\0';
 
 	return res;
 }
 
-static char *GPU(const char *home) {
+char *GPU(const char *home) {
 	DIR *dir = opendir("/proc/driver/nvidia/gpus/");
 	struct dirent *directory;
-	char *path = malloc(BUFF),
-			 *gpu = malloc(BUFF);
-	memset(path, '\0', BUFF / 2);
+	char path[BUFF * 2];
 
 	if(!dir) {
 		strcat(path, home);
 		strcat(path, "/.config/elofetch/gpu");
 
 		FILE *gpu_read = fopen(path, "r");
-		char *cmd,
-				 *line = NULL;
+		char cmd[50], *line = NULL;
 		size_t len;
 		if(!gpu_read) {
-			cmd = strdup(read_stdout("echo $(/bin/grep -oE '\\[.*\\]' <<< \"$(/bin/lspci | /bin/cut -f1 | /bin/grep VGA)\" | /bin/sed 's/\\[//;s/\\]//' | /bin/sed -n -e '1h;2,$H;${g;s/\\n/, /g' -e 'p' -e '}')"));
+			strcpy(cmd, read_stdout("echo $(/bin/grep -oE '\\[.*\\]' <<< \"$(/bin/lspci | /bin/cut -f1 | /bin/grep VGA)\" | /bin/sed 's/\\[//;s/\\]//' | /bin/sed -n -e '1h;2,$H;${g;s/\\n/, /g' -e 'p' -e '}')"));
 			FILE *file = fopen(path, "a");
-
 			fprintf(file, "%s", cmd);
 			fclose(file);
-			free(cmd);
-
 			FILE *file1 = fopen(path, "r");
 
-			free(path);
-
-			if(!file1)
-				return "   ";
+			if(!file1) return "unknown";
 
 			if(getline(&line, &len, file1) != -1)
-				sscanf(line, "%60[^\n]s", gpu);
+				sscanf(line, "%50[^\n]s", gpu);
 
 			free(line);
 			fclose(file1);
@@ -434,9 +346,8 @@ static char *GPU(const char *home) {
 		}
 
 		if(getline(&line, &len, gpu_read) != -1)
-			sscanf(line, "%60[^\n]s", gpu);
+			sscanf(line, "%50[^\n]s", gpu);
 
-		free(path);
 		free(line);
 		fclose(gpu_read);
 
@@ -456,9 +367,8 @@ static char *GPU(const char *home) {
 	size_t len;
 	char *line = NULL;
 
-	if(getline(&line, &len, file) != -1) {
-		sscanf(line, "Model:           %60[^\n]s", gpu);
-	}
+	if(getline(&line, &len, file) != -1)
+		sscanf(line, "Model:           %50[^\n]s", gpu);
 
 	return gpu;
 }
@@ -472,7 +382,7 @@ int packages(const char *path) {
 	if(!dir)
 		return 0;
 
-	while((directory = readdir(dir)) != NULL)
+	while((directory = readdir(dir)) != NULL && i < 99999999)
 		i++;
 
 	closedir(dir);
@@ -480,10 +390,9 @@ int packages(const char *path) {
 	return i - 3;
 }
 
-static char *uptime() {
+char *uptime() {
 	struct sysinfo os_info;
 	int err = sysinfo(&os_info);
-	char *time = malloc(BUFF / 2);
 	unsigned int uis = os_info.uptime, days, hours, minutes;
 
 	days = uis / 86400;
@@ -494,26 +403,25 @@ static char *uptime() {
 	uis %= 60;
 
 	if(err) {
-		perror("elofetch");
-		exit(1);
+		perror(PROGRAM_NAME);
+		exit(-1);
 	}
 
 	if(days)
-		snprintf(time, BUFF / 2, "%u days, %u hours, %u mins", days, hours, minutes);
+		snprintf(time, BUFF, "%u days, %u hours, %u mins", days, hours, minutes);
 	else if(!days && hours)
-		snprintf(time, BUFF / 2, "%u hours, %u mins", hours, minutes);
+		snprintf(time, BUFF, "%u hours, %u mins", hours, minutes);
 	else if(!days && !hours && minutes)
-		snprintf(time, BUFF / 2, "%u mins", minutes);
+		snprintf(time, BUFF, "%u mins", minutes);
+	
 	return time;
 }
 
-static char *colors1() {
-	char *colors = malloc(BUFF),
-			 *clr = colors;
-	size_t i;
+char *colors1() {
+	char *clr = colors;
 
-	for(i = 0; i < 8; i++) {
-		sprintf(clr, "\e[4%zum   ", i);
+	for(uint8_t i = 0; i < 8; i++) {
+		sprintf(clr, "\e[4%hhum   ", i);
 		clr += 8;
 	}
 
@@ -522,13 +430,11 @@ static char *colors1() {
 	return colors;
 }
 
-static char *colors2() {
-	char *colors = malloc(BUFF),
-			 *clr = colors;
-	size_t i;
-
-	for(i = 8; i < 16; i++) {
-		sprintf(clr, "\e[48;5;%zum   ", i);
+char *colors2() {
+	char *clr = colors;
+	
+	for(uint8_t i = 8; i < 16; i++) {
+		sprintf(clr, "\e[48;5;%hhum   ", i);
 		clr += 12 + (i >= 10 ? 1 : 0);
 	}
 
@@ -545,27 +451,25 @@ static char *pacman() {
 	return pkg;
 }
 
-void elofetch(const char *distro, const char *logo[], const char *COLOR, const char *pkgs, int n, const char *home) {
+void elofetch(const char *distro, const char *logo[], const char *COLOR, const char *pkgs, uint8_t n, const char *home) {
 	struct utsname uts;
 
   if(uname(&uts)) {
     perror(PROGRAM_NAME);
-
     exit(-1);
   }
 
-	const char *user = getenv("USER");
-  const char *host = hostname();
-	const char *bars = generate_bars(strlen(user), strlen(host));
-  const char *kernel = uts.release;
-  const char *architecture = uts.machine;
-  const char *shell = strrchr(getenv("SHELL"), '/') + 1;
-	const char *cpu = processor();
-	const char *gpu = GPU(home);
-  const char *terminal = getenv("TERM");
-	size_t i;
+	const char *user = getenv("USER"),
+				*host = hostName(),
+				*bars = generate_bars(strlen(user), strlen(host)),
+				*kernel = uts.release,
+				*architecture = uts.machine,
+				*shell = strrchr(getenv("SHELL"), '/') + 1,
+				*cpu = processor(home),
+				*gpu = GPU(home),
+				*terminal = getenv("TERM");
 
-	for(i = 0; i < n; i++) {
+	for(uint8_t i = 0; i < n; i++) {
 		if(*(logo + i) == NULL) {
 			puts(RESET);
 			exit(-1);
@@ -634,88 +538,72 @@ void elofetch(const char *distro, const char *logo[], const char *COLOR, const c
 }
 
 void linux_distro(const char *home) {
-	char *distro = operating_system();
+	const char *distro = operating_system();
 	char *pkgs;
 
-	if(strncmp(distro, "Arch", 4) == 0) {
-		#include"distro/arch.h"
+	if(strncasecmp(distro, "arch", 4) == 0) {
+		#include "distro/arch.h"
 
 		pkgs = pacman();
 		elofetch(distro, arch, BOLD_CYAN, pkgs, 19, home);
 	}
-	else if(strncmp(distro, "Parrot", 5) == 0) {
-		#include"distro/parrot.h"
+	else if(strncasecmp(distro, "parrot", 5) == 0) {
+		#include "distro/parrot.h"
 
 		pkgs = pacman();
 		elofetch(distro, parrot, BOLD_CYAN, pkgs, 24, home);
 	}
-	else if(strncmp(distro, "Debian", 6) == 0) {
-		#include"distro/debian.h"
+	else if(strncasecmp(distro, "debian", 6) == 0) {
+		#include "distro/debian.h"
 
 		pkgs = pacman();
 		elofetch(distro, debian, BOLD_RED, pkgs, 17, home);
 	}
-	else if(strncmp(distro, "Manjaro", 7) == 0) {
-		#include"distro/manjaro.h"
+	else if(strncasecmp(distro, "manjaro", 7) == 0) {
+		#include "distro/manjaro.h"
 
 		pkgs = pacman();
 		elofetch(distro, manjaro, BOLD_GREEN, pkgs, 14, home);
 	}
-	else if(strncmp(distro, "Ubuntu", 6) == 0) {
-		#include"distro/ubuntu.h"
+	else if(strncasecmp(distro, "ubuntu", 6) == 0) {
+		#include "distro/ubuntu.h"
 
 		pkgs = pacman();
 		elofetch(distro, ubuntu, BOLD_RED, pkgs, 20, home);
 	}
-	else if(strncmp(distro, "Linux Mint", 10) == 0) {
-		#include"distro/mint.h"
+	else if(strncasecmp(distro, "linux mint", 10) == 0) {
+		#include "distro/mint.h"
 
 		pkgs = pacman();
 		elofetch(distro, mint, BOLD_GREEN, pkgs, 19, home);
 	}
-	else if(strncasecmp(distro, "Pop!_OS", 7) == 0) {
-		#include"distro/popos.h"
+	else if(strncasecmp(distro, "pop!_os", 7) == 0) {
+		#include "distro/popos.h"
 
 		pkgs = pacman();
 		elofetch(distro, pop_os, BOLD_BLUE, pkgs, 20, home);
 	}
-	else if(strncmp(distro, "Kali", 4) == 0) {
-		#include"distro/kali.h"
+	else if(strncasecmp(distro, "kali", 4) == 0) {
+		#include "distro/kali.h"
 
 		pkgs = pacman();
 		elofetch(distro, kali, BOLD_BLUE, pkgs, 20, home);
 	}
 }
 
-void windows() {
-	// Coming Soon
-}
-
-int main(int argc, const char *argv[]) {
+int main(int argc, const char **argv) {
   const char *home = getenv("HOME");
-	char *cmd;
 
-	if(argv[1])
-		if(strncmp(argv[1], "--reconfigure", 14) == 0) {
-    	cmd = malloc(strlen(home) + 32);
-  		strcpy(cmd, "/bin/rm -rf ");
-  		*(cmd + 12) = '\0';
-			strcat(cmd, home);
-    	strcat(cmd, "/.config/elofetch/");
+	if(argv[1] && strncmp(argv[1], "--reconfigure", 14) == 0) {
+    	uint8_t len = strlen(home) + 30;
+			char cmd[len];
+			snprintf(cmd, len, "/bin/rm -rf %s/.config/elofetch/", home);
 			system(cmd);
-			free(cmd);
-  }
-
-	switch(OS) {
-		case 1:
-			linux_distro(home);
-			break;
-		case 2:
-			windows();
-			break;
-		default:
-			return -1;
+  		puts("Elofetch: successfully reconfigured!");
+			return 0;
 	}
+
+	linux_distro(home);
 
 	return 0;
 }

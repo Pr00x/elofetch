@@ -1,7 +1,7 @@
 CC=gcc
 
 install:
-	$(CC) elofetch.c -o /usr/bin/elofetch
+	$(CC) -O2 elofetch.c -o /usr/bin/elofetch
 	mkdir -p ~/.config/
 	mkdir -p ~/.config/elofetch/
 	cp /proc/cpuinfo ~/.config/elofetch/cpuinfo
