@@ -9,6 +9,7 @@
 #include <dirent.h>
 #include <errno.h>
 #include <stdint.h>
+#include "distro/logo.h"
 
 #define RED "\x1b[31m"
 #define GREEN "\x1b[32m"
@@ -28,14 +29,14 @@
 #define BUFF 50
 #define PROGRAM_NAME "elofetch"
 
-char hostname[BUFF * 2], gpu[BUFF], bars[BUFF], distro[BUFF], path[BUFF * 2], CPU[BUFF], ram[BUFF], hdd[BUFF], colors[BUFF * 2], time[BUFF], res[15], gpu[BUFF], readStdout[BUFF];
+char hostname[BUFF * 2], gpu[BUFF], bars[BUFF], distro[BUFF], path[BUFF * 2], CPU[BUFF], ram[BUFF], hdd[BUFF], colors[BUFF * 2], time[BUFF], res[15], gpu[BUFF], readStdout[BUFF], pkg[BUFF / 2], temperature[BUFF / 2];
 
 uint8_t blank(const char *str) {
 	for(uint8_t i = 0; i < strlen(str); i++)
-		if(*(str + i) != ' ')
-			return -1;
+		if(*(str + i) == ' ')
+			return 0;
 
-	return 0;
+	return 1;
 }
 
 void remove_word(char *str, const char *sub) {
@@ -119,7 +120,9 @@ char *operating_system() {
 			break;
 
 	fclose(file);
-	free(line);
+	
+	if(line)
+		free(line);
 
 	return distro;
 }
@@ -232,8 +235,12 @@ char *processor(const char *home) {
 		fclose(cpu_freq);
 		snprintf(CPU, BUFF, "%s(%d) @ %.2fGHz", model, threads, frequency);
 	}
-	free(line);
-	free(line1);
+	
+	if(line)
+		free(line);
+	
+	if(line1)
+		free(line1);
 
 	return CPU;
 }
@@ -257,7 +264,9 @@ char *memory() {
 	}
 
 	fclose(file);
-	free(line);
+	
+	if(line)
+		free(line);
 
 	used_ram = (memtotal - memfree - buffers - cached + shmem - sreclaimable) / 1024;
 	memtotal /= 1024;
@@ -299,76 +308,63 @@ char *resolution(const char *home) {
 		const char *stdout = read_stdout("/bin/xdpyinfo | awk '/dimensions:/ { print $2 }'");
 		fprintf(file1, "%s", stdout);
 		fclose(file1);
+		strcpy(res, stdout);
+		return res;
 	}
 
 	file = fopen(path, "r");
-	char *line = NULL;
-	size_t len;
-
-	if(getline(&line, &len, file) != -1)
-		sscanf(line, "%15s", res);
+	int c;
+	uint8_t i = 0;
+		
+	while((c = fgetc(file)) != EOF && i < 14) {
+		*(res + i) = c;
+		i++;
+	}
 
 	fclose(file);
-	free(line);
-	*(res + 14) = '\0';
+	*(res + i) = '\0';
+
+	if(i > 13) {
+		remove(path);
+		return NULL;
+	}
 
 	return res;
 }
 
 char *GPU(const char *home) {
-	DIR *dir = opendir("/proc/driver/nvidia/gpus/");
-	struct dirent *directory;
-	char path[BUFF * 2];
+	memset(path, '\0', BUFF * 2);
+	strcat(path, home);
+	strcat(path, "/.config/elofetch/gpu");
+	FILE *file = fopen(path, "r");
+	char cmd[BUFF];
+	int c;
+	uint8_t i = 0;
 
-	if(!dir) {
-		strcat(path, home);
-		strcat(path, "/.config/elofetch/gpu");
+	if(!file) {
+		strcpy(cmd, read_stdout("/usr/bin/lspci | /usr/bin/grep VGA | /usr/bin/grep -o '\\[[^]]*]' | /usr/bin/tail -c +2 | /usr/bin/head -c -2"));
+		FILE *file1 = fopen(path, "a");
+		
+		if(!file1) return NULL;
 
-		FILE *gpu_read = fopen(path, "r");
-		char cmd[50], *line = NULL;
-		size_t len;
-		if(!gpu_read) {
-			strcpy(cmd, read_stdout("echo $(/bin/grep -oE '\\[.*\\]' <<< \"$(/bin/lspci | /bin/cut -f1 | /bin/grep VGA)\" | /bin/sed 's/\\[//;s/\\]//' | /bin/sed -n -e '1h;2,$H;${g;s/\\n/, /g' -e 'p' -e '}')"));
-			FILE *file = fopen(path, "a");
-			fprintf(file, "%s", cmd);
-			fclose(file);
-			FILE *file1 = fopen(path, "r");
-
-			if(!file1) return "unknown";
-
-			if(getline(&line, &len, file1) != -1)
-				sscanf(line, "%50[^\n]s", gpu);
-
-			free(line);
-			fclose(file1);
-
-			return gpu;
-		}
-
-		if(getline(&line, &len, gpu_read) != -1)
-			sscanf(line, "%50[^\n]s", gpu);
-
-		free(line);
-		fclose(gpu_read);
-
+		fprintf(file1, "%s", cmd);
+		fclose(file1);
+		strcpy(gpu, cmd);
 		return gpu;
 	}
 
-	while((directory = readdir(dir)) != NULL) {
-		if(strncmp(directory->d_name, ".", 2) == 0 || strncmp(directory->d_name, "..", 3) == 0)
-      continue;
+  while((c = fgetc(file)) != EOF && i < 49) {
+ 		*(gpu + i) = c;
+    i++;
+  }
 
-		strcpy(path, "/proc/driver/nvidia/gpus/");
-		strcat(path, directory->d_name);
-		strcat(path, "/information");
+	*(gpu + i) = '\0';
+	fclose(file);
+
+	if(i > 48) {
+		remove(path);
+		return NULL;
 	}
-
-	FILE *file = fopen(path, "r");
-	size_t len;
-	char *line = NULL;
-
-	if(getline(&line, &len, file) != -1)
-		sscanf(line, "Model:           %50[^\n]s", gpu);
 
 	return gpu;
 }
@@ -400,7 +396,6 @@ char *uptime() {
 	hours = uis / 3600;
 	uis %= 3600;
 	minutes = uis / 60;
-	uis %= 60;
 
 	if(err) {
 		perror(PROGRAM_NAME);
@@ -413,8 +408,30 @@ char *uptime() {
 		snprintf(time, BUFF, "%u hours, %u mins", hours, minutes);
 	else if(!days && !hours && minutes)
 		snprintf(time, BUFF, "%u mins", minutes);
-	
+
 	return time;
+}
+
+char *temp() {
+	FILE *file = fopen("/sys/class/thermal/thermal_zone2/temp", "r");
+	int c;
+	uint8_t i = 0;
+	char rawTemp[7];
+	int temp;
+
+	if(!file) return NULL;
+
+	while((c = fgetc(file)) != EOF || i < 5) {
+		*(rawTemp + i) = c;
+		i++;
+	}
+
+	*(rawTemp + i) = '\0';
+	fclose(file);
+	temp = atoi(rawTemp);
+	snprintf(temperature, BUFF / 2, "%.1f°C / %.1f°F", (float)temp / 1000, (float)(temp / 1000) * 9 / 5 + 32);
+
+	return temperature;
 }
 
 char *colors1() {
@@ -443,9 +460,8 @@ char *colors2() {
 	return colors;
 }
 
-static char *pacman() {
+char *pacman() {
 	int i = packages("/var/lib/pacman/local/");
-	char *pkg = malloc(BUFF / 2);
 	snprintf(pkg, BUFF / 2, "%d (pacman)", i);
 
 	return pkg;
@@ -465,9 +481,11 @@ void elofetch(const char *distro, const char *logo[], const char *COLOR, const c
 				*kernel = uts.release,
 				*architecture = uts.machine,
 				*shell = strrchr(getenv("SHELL"), '/') + 1,
+				*res = resolution(home),
 				*cpu = processor(home),
 				*gpu = GPU(home),
-				*terminal = getenv("TERM");
+				*terminal = getenv("TERM"),
+				*ctemp = temp();
 
 	for(uint8_t i = 0; i < n; i++) {
 		if(*(logo + i) == NULL) {
@@ -500,7 +518,12 @@ void elofetch(const char *distro, const char *logo[], const char *COLOR, const c
 				printf("%sShell" RESET ": %s\x0A", COLOR, shell);
 				break;
 			case 7:
-				printf("%sResolution" RESET ": %s\x0A", COLOR, resolution(home));
+				if(!res) {
+					putchar('\x0A');
+					break;
+				}
+
+				printf("%sResolution" RESET ": %s", COLOR, res);
 				break;
 			case 8:
 				printf("%sTerminal" RESET ": %s\x0A", COLOR, terminal);
@@ -509,11 +532,12 @@ void elofetch(const char *distro, const char *logo[], const char *COLOR, const c
 				printf("%sCPU" RESET ": %s\x0A", COLOR, cpu);
 				break;
 			case 10:
-				if(blank(gpu))
-					printf("%sGPU" RESET ": %s\x0A", COLOR, gpu);
-				else
+				if(!gpu) {
 					putchar('\x0A');
+					break;
+				}
 
+				printf("%sGPU" RESET ": %s\x0A", COLOR, gpu);
 				break;
 			case 11:
 				printf("%sRAM" RESET ": %s\x0A", COLOR, memory());
@@ -525,9 +549,20 @@ void elofetch(const char *distro, const char *logo[], const char *COLOR, const c
 				putchar('\x0A');
 				break;
 			case 14:
-				printf("%s\x0A", colors1());
+				if(!ctemp) {
+					putchar('\x0A');
+					break;
+				}
+	
+				printf("%sCPU Temperature" RESET ": %s\x0A", COLOR, ctemp);
 				break;
 			case 15:
+				putchar('\x0A');
+				break;
+			case 16:
+				printf("%s\x0A", colors1());
+				break;
+			case 17:
 				printf("%s\x0A", colors2());
 				break;
 			default:
@@ -542,50 +577,34 @@ void linux_distro(const char *home) {
 	char *pkgs;
 
 	if(strncasecmp(distro, "arch", 4) == 0) {
-		#include "distro/arch.h"
-
 		pkgs = pacman();
 		elofetch(distro, arch, BOLD_CYAN, pkgs, 19, home);
 	}
 	else if(strncasecmp(distro, "parrot", 5) == 0) {
-		#include "distro/parrot.h"
-
 		pkgs = pacman();
 		elofetch(distro, parrot, BOLD_CYAN, pkgs, 24, home);
 	}
 	else if(strncasecmp(distro, "debian", 6) == 0) {
-		#include "distro/debian.h"
-
 		pkgs = pacman();
 		elofetch(distro, debian, BOLD_RED, pkgs, 17, home);
 	}
 	else if(strncasecmp(distro, "manjaro", 7) == 0) {
-		#include "distro/manjaro.h"
-
 		pkgs = pacman();
 		elofetch(distro, manjaro, BOLD_GREEN, pkgs, 14, home);
 	}
 	else if(strncasecmp(distro, "ubuntu", 6) == 0) {
-		#include "distro/ubuntu.h"
-
 		pkgs = pacman();
 		elofetch(distro, ubuntu, BOLD_RED, pkgs, 20, home);
 	}
 	else if(strncasecmp(distro, "linux mint", 10) == 0) {
-		#include "distro/mint.h"
-
 		pkgs = pacman();
 		elofetch(distro, mint, BOLD_GREEN, pkgs, 19, home);
 	}
 	else if(strncasecmp(distro, "pop!_os", 7) == 0) {
-		#include "distro/popos.h"
-
 		pkgs = pacman();
-		elofetch(distro, pop_os, BOLD_BLUE, pkgs, 20, home);
+		elofetch(distro, popOs, BOLD_BLUE, pkgs, 20, home);
 	}
 	else if(strncasecmp(distro, "kali", 4) == 0) {
-		#include "distro/kali.h"
-
 		pkgs = pacman();
 		elofetch(distro, kali, BOLD_BLUE, pkgs, 20, home);
 	}
@@ -602,7 +621,7 @@ int main(int argc, const char **argv) {
   		puts("Elofetch: successfully reconfigured!");
 			return 0;
 	}
-
+	
 	linux_distro(home);
 
 	return 0;
