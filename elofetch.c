@@ -396,6 +396,7 @@ char *uptime() {
 	hours = uis / 3600;
 	uis %= 3600;
 	minutes = uis / 60;
+	uis %= 60;
 
 	if(err) {
 		perror(PROGRAM_NAME);
@@ -408,6 +409,8 @@ char *uptime() {
 		snprintf(time, BUFF, "%u hours, %u mins", hours, minutes);
 	else if(!days && !hours && minutes)
 		snprintf(time, BUFF, "%u mins", minutes);
+	else if(!days && !hours && !minutes && uis) 
+		snprintf(time, BUFF, "%u seconds", uis);
 
 	return time;
 }
