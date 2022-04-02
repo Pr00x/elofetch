@@ -14,7 +14,7 @@ The average <b>Elofetch</b> execution speed is <b>1ms</b>. (For example, neofetc
 ## Installation
 ```
 git clone https://github.com/Pr00x/elofetch
-sudo make clean install
+make clean install
 ```
 ## Usage
 #### After installing, just run the program

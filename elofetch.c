@@ -404,12 +404,12 @@ char *uptime() {
 	}
 
 	if(days)
-		snprintf(time, BUFF, "%u days, %u hours, %u mins", days, hours, minutes);
+		snprintf(time, BUFF, "%u days, %u hours, %u mins, %u seconds", days, hours, minutes, uis);
 	else if(!days && hours)
-		snprintf(time, BUFF, "%u hours, %u mins", hours, minutes);
+		snprintf(time, BUFF, "%u hours, %u mins, %u seconds", hours, minutes, uis);
 	else if(!days && !hours && minutes)
-		snprintf(time, BUFF, "%u mins", minutes);
-	else if(!days && !hours && !minutes && uis) 
+		snprintf(time, BUFF, "%u mins, %u seconds", minutes, uis);
+	else if(!days && !hours && !minutes && uis >= 0) 
 		snprintf(time, BUFF, "%u seconds", uis);
 
 	return time;
@@ -618,10 +618,15 @@ int main(int argc, const char **argv) {
 
 	if(argv[1] && strncmp(argv[1], "--reconfigure", 14) == 0) {
     	uint8_t len = strlen(home) + 30;
-			char cmd[len];
+			char cmd[len], md[len - 20], md1[len - 11];
 			snprintf(cmd, len, "/bin/rm -rf %s/.config/elofetch/", home);
 			system(cmd);
-  		puts("Elofetch: successfully reconfigured!");
+			snprintf(md, len - 20, "%s/.config/", home);
+			strcpy(md1, md);
+			strcat(md1, "elofetch/");
+			mkdir(md, S_IRWXU);
+			mkdir(md1, S_IRWXU);
+			puts("Elofetch: successfully reconfigured!");
 			return 0;
 	}
 	
